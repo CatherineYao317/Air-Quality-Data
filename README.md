@@ -27,7 +27,7 @@ Variable definitions, units, and missing value explanations are provided in `dat
 The datasets are intended for exploratory data analysis and statistical case studies.
 
 ## File Format
-- CSV (UTF-8)
+- CSV
 
 ## License
 This data is publicly available and intended for academic use.
