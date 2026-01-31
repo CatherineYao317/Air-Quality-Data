@@ -1,0 +1,63 @@
+name: Analysis Pipeline (uv + Quarto)
+
+on:
+  push:
+    branches: ["main"]   # Set trigger to main branch merge/push
+  workflow_dispatch: {}
+
+# Required for GitHub Pages deployment (allows GITHUB_TOKEN to push to gh-pages)
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv --version
+
+      - name: Sync dependencies (locked)
+        run: |
+          uv sync --frozen
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      # Run initial analysis script (should write outputs/summary.csv)
+      # This is just a placeholder, replace the filename with actual analysis script later.
+      - name: Run analysis (smoke test)
+        run: |
+          uv run python analysis/00_smoke_test.py
+
+      - name: Render Quarto report
+        run: |
+          quarto render report/test_report.qmd
+          mkdir -p site
+          cp report/test_report.html site/index.html
+
+      # Upload HTML as artifact (immutable snapshot for this workflow run)
+      - name: Upload Executive Report (single HTML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-html
+          path: report/test_report.html
+          if-no-files-found: error
+
+      # Deploy rendered HTML to GitHub Pages (click-to-view online)
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
