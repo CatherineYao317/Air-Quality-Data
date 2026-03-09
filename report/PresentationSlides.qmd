@@ -64,7 +64,7 @@ We fit a Bayesian hierarchical regression model with a Gaussian likelihood to es
 :::
 
 ::: {.column width="60%"}
-![](images/GaussianCoeff.png){width="100%"}
+![](PresentationImage/GaussianCoeff.png){width="100%"}
 :::
 :::::
 
@@ -92,7 +92,7 @@ We fit a Bayesian hierarchical regression model with a Gaussian likelihood to es
 :::
 
 ::: {.column width="60%"}
-![](images/LagCoeff.png){width="100%"}
+![](PresentationImage/LagCoeff.png){width="100%"}
 :::
 :::::
 
@@ -113,7 +113,7 @@ We fit a Bayesian hierarchical regression model with a Gaussian likelihood to es
 :::
 
 ::: {.column width="60%"}
-![](images/PosteriorPred.png){width="100%"}
+![](PresentationImage/PosteriorPred.png){width="100%"}
 :::
 :::::
 
@@ -126,7 +126,7 @@ We fit a Bayesian hierarchical regression model with a Gaussian likelihood to es
 :::
 
 ::: {.column width="60%"}
-![](images/residual.png){width="100%"}
+![](PresentationImage/residual.png){width="100%"}
 :::
 :::::
 
@@ -144,7 +144,7 @@ We fit a Bayesian hierarchical regression model with a Gaussian likelihood to es
 :::
 
 ::: {.column width="60%"}
-![](images/TdistCoef.png){width="100%"}
+![](PresentationImage/TdistCoef.png){width="100%"}
 :::
 :::::
 
@@ -211,7 +211,7 @@ overall performance comparison
 :::
 
 ::: {.column width="60%"}
-![](images/RQ2OverallComp.png){width="100%"}
+![](PresentationImage/RQ2OverallComp.png){width="100%"}
 :::
 :::::
 
@@ -223,7 +223,7 @@ extreme days performance comparison
 :::
 
 ::: {.column width="60%"}
-![](images/RQ2ExtremeComp.png){width="100%"}
+![](PresentationImage/RQ2ExtremeComp.png){width="100%"}
 :::
 :::::
 
@@ -263,7 +263,7 @@ The model’s wildfire exposure features, especially the 3-day lag, meaningfully
 :::
 
 ::: {.column width="60%"}
-![](images/RQ3Coeff.png){width="100%"}
+![](PresentationImage/RQ3Coeff.png){width="100%"}
 :::
 :::::
 
@@ -293,6 +293,15 @@ The model’s wildfire exposure features, especially the 3-day lag, meaningfully
 :::
 
 ::: {.column width="60%"}
-![](images/RiskUplift.png){width="100%"}
+![](PresentationImage/RiskUplift.png){width="100%"}
 :::
 :::::
+
+
+## Conclusion
+
+-   Wildfire exposure shows a clear positive association with next-day AQI, with the strongest and most consistent effect around a ~3-day lag; results are robust under Gaussian and Student-t errors (Student-t better reflects spike-prone AQI).
+-   Adding WSEI features improves performance where CS1 struggled most—high-AQI periods—by providing an additional driver that helps explain and anticipate spike days. The wildfire-aware model reduces “missing-driver” behavior relative to baselines that rely mainly on seasonality/meteorology.
+-   Using a top-decile next-day AQI event, the Bayesian risk model produces a probability score that is interpretable and calibratable. Wildfire features (especially lag-3) increase predicted risk, and the uplift diagnostic shows the wildfire signal activates primarily on a subset of days (good: less noise on normal days).
+Value to decision-making
+-   We can deploy a wildfire-aware early-warning indicator for Ontario: a daily risk probability + a clear explanation of why risk is elevated.
