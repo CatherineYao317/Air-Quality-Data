@@ -1,11 +1,19 @@
 # Air-Quality-Data
 
-This repository contains the full analytical pipeline, modeling framework, and reporting outputs for our Ontario air quality study. The project addresses two primary research questions:
+This repository contains the full analytical pipeline, modelling framework, and reporting outputs for our Ontario air quality study — spanning two case studies.
 
-- **Q1** – How daily pollutant levels (focus: NO / AQI) are associated with traffic volume after controlling for meteorology, and whether the relationship varies by season.
-- **Q2** – How pollutant concentrations vary by hour of day and weekday vs weekend, and whether these temporal patterns differ by season or station.
+## Research Questions
 
-The repository is structured to support **reproducibility, modular development, and automated reporting** via GitHub Actions (uv + Quarto).
+### Case Study 1
+- **CS1-RQ1** – How are daily pollutant levels (NO / AQI) associated with traffic volume after controlling for meteorology, and does the relationship vary by season?
+- **CS1-RQ2** – How do pollutant concentrations vary by hour of day and weekday vs. weekend, and do these temporal patterns differ by season or station?
+
+### Case Study 2
+- **CS2-RQ1** – Does wildfire exposure (WSEI) explain the extreme AQI spikes that Case Study 1 models systematically failed to capture? *(Bayesian hierarchical regression, R/brms)*
+- **CS2-RQ2** – Does adding WSEI features improve next-day AQI point-forecast accuracy, particularly on extreme days (top-decile AQI)? *(OLS / Neural Network / LSTM comparison, Python)*
+- **CS2-RQ3** – Can we build a stable, interpretable wildfire-risk score that supports operational health advisories? *(Bayesian hierarchical logistic regression, R/brms)*
+
+---
 
 ## Repository Structure
 
@@ -14,244 +22,239 @@ Air-Quality-Data/
 │
 ├── .github/workflows/
 │   ├── README.md
-│   └── pipeline.yml
+│   └── pipeline.yml               ← CI: smoke test + Q1/CS1-Q2 + Quarto render
 │
 ├── analysis/
-│   ├── 00_smoke_test.py
-│   ├── AQProcess.ipynb
-│   ├── Merge.ipynb
-│   ├── Q1.ipynb
-│   ├── WX_TRProcess.ipynb
-│   └── README.md
+│   ├── 00_smoke_test.py           ← lightweight CI validation
+│   ├── AQProcess.ipynb            ← AQI cleaning & standardisation
+│   ├── WX_TRProcess.ipynb         ← weather & traffic preprocessing
+│   ├── Merge.ipynb                ← spatial join → merged_10km_daily_updated.csv
+│   ├── Q1.ipynb                   ← CS1-RQ1 modelling
+│   └── CS2Q2.ipynb                ← CS2-RQ2 modelling (OLS / NN / LSTM) ★
 │
 ├── data/
-│   ├── Q1_data/
-│   │   ├── cutoff.csv
-│   │   ├── feature_cols.json
-│   │   ├── station12008_test_daily.csv
-│   │   └── test_all.csv
-│   │
-│   ├── wildfire/                        ← Case Study 2 (not committed, see below)
-│   │   ├── raw/                         ← downloaded ZIPs + extracted CSVs
-│   │   ├── hotspots_2022_2024_canada.csv.gz   ← combined raw
-│   │   ├── hotspots_clean.csv.gz              ← analysis-ready hotspots
-│   │   ├── wsei_features.csv               ← WSEI feature cache (station × date)
-│   │   └── merged_with_wsei.csv            ← full Case 2 modeling dataset
-│   │
+│   ├── Q1_data/                   ← pre-split CS1 test sets (committed)
+│   ├── wildfire/                  ← NOT committed (300–400 MB); generate with scripts/
+│   │   ├── raw/                   ← downloaded ZIPs + extracted CSVs
+│   │   ├── hotspots_2022_2024_canada.csv.gz
+│   │   ├── hotspots_clean.csv.gz
+│   │   ├── wsei_features.csv      ← intermediate WSEI cache
+│   │   └── merged_with_wsei.csv   ← full CS2 modelling dataset
 │   ├── air_quality_csv/
 │   ├── AirQuality_ON_2022_2024.csv
 │   ├── Hourly_AQI_EPA.xlsb
+│   ├── data_dictionary.md         ← full data dictionary + WSEI design rationale
 │   ├── merged_10km_daily_updated.csv
 │   ├── traffic_ON_2022_2024.csv
 │   └── weather_ON_2022_2024.csv
 │
 ├── model/
-│   ├── Q1_models/
-│   │   ├── elasticnet_best.joblib
-│   │   ├── mlp_best.joblib
+│   ├── CS2RQ2_models/             ← CS2-RQ2 pretrained weights (committed) ★
+│   │   ├── ols_baseline.pkl
+│   │   ├── ols_wildfire.pkl
+│   │   ├── nn_baseline.joblib
+│   │   ├── nn_wildfire.joblib
+│   │   ├── lstm_baseline.pt
+│   │   ├── lstm_wildfire.pt
+│   │   ├── lstm_metadata.json     ← feature columns + architecture notes
+│   │   └── model_registry.json
+│   ├── Q1_models/                 ← CS1 pretrained weights (committed)
 │   │   ├── ols_pipe.joblib
-│   │   └── xgb_best.joblib
-│   │
-│   ├── Model Fitting to question 2.ipynb
+│   │   ├── elasticnet_best.joblib
+│   │   ├── xgb_best.joblib
+│   │   └── mlp_best.joblib
+│   ├── CS2Q1&3 Analysis.qmd      ← CS2-RQ1 & RQ3 Bayesian analysis (R/brms) ★
+│   ├── Model Fitting to question 2.ipynb  ← CS1-RQ2 mixed-effects modelling
 │   ├── Q1.ipynb
 │   └── README.md
 │
 ├── outputs/
 │   └── figures/
-│       └── .gitkeep
 │
-└── report/
-    ├── Q1_report.qmd
-    ├── Research Question 2 Report.qmd
-    ├── Synthesized Report.qmd
-    ├── final_report_with_code_included.pdf
-    ├── final_report_with_code_included.qmd
-    ├── final_report_without_code.pdf
-    ├── final_report_without_code.qmd
-    └── test_report.qmd
+├── report/
+│   ├── FinalSlides.pdf            ← rendered presentation (committed)
+│   ├── Group3PresentationSlides.pdf
+│   ├── PresentationSlides.qmd
+│   ├── final_report_with_code_included.qmd
+│   ├── final_report_without_code.qmd
+│   └── ...
+│
+├── scripts/
+│   ├── download_cwfis_hotspots.py ← Step 1: download CWFIS data
+│   ├── clean_cwfis_hotspots.py    ← Step 2: clean hotspots
+│   ├── build_wsei_features.py     ← Step 3: compute WSEI + merge
+│   ├── Q1_script.py               ← CS1 modelling (used by CI)
+│   ├── run.sh                     ← CI entry point
+│   └── README.md                  ← detailed script documentation
+│
+└── support/
+    ├── Case Study Overview - STAT 946 - Winter 2026.pdf
+    └── STAT946 Case2 Assignment5 Proposal - Group 3.pdf
 ```
 
-# Data Sources
+---
 
-The analysis integrates the following datasets.
+## Data Sources
 
-> **Note on wildfire data:** The `data/wildfire/` folder is **not committed to GitHub**
-> because the files are 300–400 MB. To reproduce them locally, run:
-> ```bash
-> python scripts/download_cwfis_hotspots.py
-> python scripts/clean_cwfis_hotspots.py
-> python scripts/build_wsei_features.py
-> ```
-> See `scripts/README.md` and `data/data_dictionary.md` for full details.
+### Case Study 1
 
-### 1. Ontario Air Quality Data (2022–2024)
-- Source: Ontario Ministry of the Environment
-- File: `AirQuality_ON_2022_2024.csv`
-- Hourly station-level pollutant measurements
+| # | Dataset | File | Notes |
+|---|---------|------|-------|
+| 1 | Ontario Air Quality (2022–2024) | `AirQuality_ON_2022_2024.csv` | Hourly station-level pollutants |
+| 2 | EPA AQI Reference | `Hourly_AQI_EPA.xlsb` | AQI standardisation |
+| 3 | Ontario Traffic (2022–2024) | `traffic_ON_2022_2024.csv` | Camera-based volume counts |
+| 4 | Ontario Weather (2022–2024) | `weather_ON_2022_2024.csv` | Temp, wind, precipitation |
+| 5 | Spatially Merged Dataset | `merged_10km_daily_updated.csv` | AQI + weather + traffic within 10 km |
 
-### 2. EPA AQI Reference
-- File: `Hourly_AQI_EPA.xlsb`
-- Used for AQI standardization and validation
+### Case Study 2
 
-### 3. Traffic Data (Ontario, 2022–2024)
-- File: `traffic_ON_2022_2024.csv`
-- Aggregated traffic camera volume data
+| # | Dataset | File | Notes |
+|---|---------|------|-------|
+| 6 | CWFIS Wildfire Hotspots (2022–2024) | `data/wildfire/hotspots_clean.csv.gz` | 4.94 M hotspots; **not committed** |
+| 7 | WSEI Features | `data/wildfire/wsei_features.csv` | Per station × day; **not committed** |
+| 8 | CS2 Modelling Dataset | `data/wildfire/merged_with_wsei.csv` | Full input for CS2-RQ1/2/3; **not committed** |
 
-### 4. Weather Data (Ontario, 2022–2024)
-- File: `weather_ON_2022_2024.csv`
-- Includes temperature, wind speed, humidity
+> **Wildfire data is not committed to GitHub** (files are 300–400 MB). Reproduce locally by running the three scripts in `scripts/` — see [Case Study 2 Data Pipeline](#case-study-2-data-pipeline) below.
 
-### 5. Spatially Merged Dataset
-- File: `merged_10km_daily_updated.csv`
-- Left-joined dataset linking AQI stations to traffic and weather within a 10 km radius
+See `data/data_dictionary.md` for column-level documentation and WSEI formula derivation.
 
-### 6. Raw Station-Level Air Quality Data
-Located in `data/air_quality_csv/`
-- Each file corresponds to a specific monitoring station with various pollutants
-- Data are recorded hourly and used to compute daily pollutant measures
-- The source inputs for constructing the Ontario Air Quality Data within a specific date range
+---
 
-### 6. Canadian Wildfire Hotspot Data (Case Study 2)
-- Source: [CWFIS Datamart](https://cwfis.cfs.nrcan.gc.ca/downloads/hotspots/archive/)
-- File: `data/wildfire/hotspots_clean.csv.gz` (analysis-ready, **not committed**)
-- CWFIS Fire M3 Daily Hotspots for 2022–2024 wildfire seasons across Canada
-- 4.94M hotspot observations with location, fire intensity (HFI, FRP, TFC), and fire weather indices
-- Reproduce locally with `scripts/download_cwfis_hotspots.py` + `scripts/clean_cwfis_hotspots.py`
+## Processing Pipeline
 
-### 7. WSEI Features and Case Study 2 Modeling Dataset
-- Files: `data/wildfire/wsei_features.csv`, `data/wildfire/merged_with_wsei.csv` (**not committed**)
-- Wildfire Smoke Exposure Index (WSEI) features computed per AQI station × day
-- Incorporates wind direction, distance decay kernel, and lags k = 0–3 days
-- Merged with `merged_10km_daily_updated.csv` to produce the full Case Study 2 input
-- Reproduce locally with `scripts/build_wsei_features.py`
-- See `data/data_dictionary.md` for data dictionary and WSEI design rationale
+### Case Study 1
 
-### Q1 Modeling Subset
-Located in `data/Q1_data/`:
-- Pre-split train/test data
-- Feature definitions (`feature_cols.json`)
-- Station-level evaluation data
+| Step | Notebook | Output |
+|------|----------|--------|
+| 1 – AQI processing | `analysis/AQProcess.ipynb` | Cleaned, standardised AQI |
+| 2 – Weather & traffic | `analysis/WX_TRProcess.ipynb` | Aggregated weather + traffic features |
+| 3 – Spatial merge | `analysis/Merge.ipynb` | `merged_10km_daily_updated.csv` |
+| 4 – CS1-RQ1 modelling | `analysis/Q1.ipynb` | OLS / ElasticNet / XGBoost / MLP |
+| 5 – CS1-RQ2 modelling | `model/Model Fitting to question 2.ipynb` | Mixed-effects + GAM |
 
-# Processing Pipeline
+### Case Study 2 Data Pipeline
 
-All major processing steps are modularized under `analysis/`.
+Run these three scripts **in order** to build the wildfire dataset from scratch:
 
-### Step 1 – AQI Processing
-**AQProcess.ipynb**
-- Cleans and standardizes AQI
-- Handles missing values
-- Produces structured station-level dataset
+```bash
+python scripts/download_cwfis_hotspots.py   # ~20 min, downloads 400 MB
+python scripts/clean_cwfis_hotspots.py      # ~2 min
+python scripts/build_wsei_features.py       # ~5–15 min (CPU-bound)
+```
 
-### Step 2 – Weather & Traffic Processing
-**WX_TRProcess.ipynb**
-- Aggregates weather + traffic
-- Constructs lag features
-- Groups by station within 10 km radius
+See `scripts/README.md` for detailed descriptions and expected outputs.
 
-### Step 3 – Data Merge
-**Merge.ipynb**
-- Left joins AQI with weather and traffic
-- Ensures temporal alignment
-- Produces modeling-ready dataset
+### Case Study 2 Modelling
 
-### Step 4 – Q1 Modeling
-**analysis/Q1.ipynb**
-- Time-based split
-- Model training (OLS, ElasticNet, RF, XGBoost, MLP)
-- Out-of-sample evaluation
+| Step | File | Language | Notes |
+|------|------|----------|-------|
+| CS2-RQ2 forecast models | `analysis/CS2Q2.ipynb` | Python | OLS / NN / LSTM; outputs committed |
+| CS2-RQ1 & RQ3 Bayesian | `model/CS2Q1&3 Analysis.qmd` | R (brms) | Requires `merged_with_wsei.csv`; see below |
 
-### Step 5 – Q2 Modeling
-**model/Model Fitting to question 2.ipynb**
-- Mixed-effects modeling
-- GAM for nonlinear time effects
-- XGBoost forecasting benchmark
+---
 
+## Pretrained Models
 
-# Pretrained Models
+### Case Study 2 — `model/CS2RQ2_models/`
 
-Located under: `model/Q1_models/`
+All six RQ2 model weights are committed to the repository. `lstm_metadata.json` records the feature columns and architecture details needed to reconstruct and load the LSTM weights.
 
-These include:
-- `ols_pipe.joblib`
-- `elasticnet_best.joblib`
-- `xgb_best.joblib`
-- `mlp_best.joblib`
+| File | Description |
+|------|-------------|
+| `ols_baseline.pkl` | OLS without wildfire features |
+| `ols_wildfire.pkl` | OLS with WSEI features |
+| `nn_baseline.joblib` | MLP without wildfire features |
+| `nn_wildfire.joblib` | MLP with WSEI features |
+| `lstm_baseline.pt` | LSTM without wildfire features |
+| `lstm_wildfire.pt` | LSTM with WSEI features |
 
-These models are stored to avoid recomputing resource-intensive training during CI runs.
+### Case Study 1 — `model/Q1_models/`
 
-Heavy computations such as:
-- Hyperparameter tuning
-- Cross-validation
-- Out-of-sample model selection  
+| File | Description |
+|------|-------------|
+| `ols_pipe.joblib` | Linear baseline |
+| `elasticnet_best.joblib` | Regularised linear model |
+| `xgb_best.joblib` | Gradient boosting |
+| `mlp_best.joblib` | Neural network |
 
-are not rerun in CI. Instead, pretrained artifacts are loaded for evaluation and reporting.
+---
 
+## Reports
 
-# Reports
+| File | Description |
+|------|-------------|
+| `report/FinalSlides.pdf` | Final group presentation (committed) |
+| `report/PresentationSlides.qmd` | Quarto source for the slides |
+| `report/final_report_without_code.qmd` | Main report (rendered by CI pipeline) |
+| `report/final_report_with_code_included.qmd` | Report with full code listings |
+| `model/CS2Q1&3 Analysis.qmd` | CS2-RQ1 & RQ3 Bayesian analysis source |
 
-All Quarto reports are under:`report`
+---
 
-These include:
-- `ols_pipe.joblib`
-- `elasticnet_best.joblib`
-- `xgb_best.joblib`
-- `mlp_best.joblib`
+## CI/CD Pipeline
 
-These models are stored to avoid recomputing resource-intensive training during CI runs.
+The automated pipeline is defined in `.github/workflows/pipeline.yml`.
 
-Heavy computations such as:
-- Hyperparameter tuning
-- Cross-validation
-- Out-of-sample model selection  
+It is triggered on every push to `main` and can also be run manually via **workflow_dispatch** (Actions tab → "Analysis Pipeline (uv + Quarto)" → Run workflow).
 
-are not rerun in CI. Instead, pretrained artifacts are loaded for evaluation and reporting.
-
-
-# Reports
-
-All Quarto reports are under: `.github/workflows/pipeline.yml`
-
-This pipeline:
-- Installs dependencies via uv
-- Runs smoke tests
-- Executes Quarto rendering
-- Regenerates reports
+**What the CI pipeline does:**
+1. Installs Python dependencies via `uv sync --frozen`
+2. Runs `scripts/Q1_script.py` (CS1-RQ1: generates tables and figures)
+3. Executes `model/Model Fitting to question 2.ipynb` (CS1-RQ2: generates figures)
+4. Renders `report/final_report_without_code.qmd` via Quarto → PDF
+5. Uploads the PDF as a downloadable Actions artifact
 
 Estimated runtime: **~3 minutes**
 
+> **CS2 analyses are not run in CI** — the wildfire data pipeline requires downloading ~400 MB of external data, and the LSTM training is resource-intensive. See the reproducibility section below.
 
-# How to Run the Repository 
+---
+
+## Reproducibility
+
+### Case Study 1
+Fully reproducible via the CI pipeline. Pretrained model weights are committed; the pipeline loads them for evaluation without re-running hyperparameter tuning.
+
+### Case Study 2
+
+The CS2 analyses cannot run in CI due to data size and compute requirements. Reproducibility is demonstrated as follows:
+
+| Component | Evidence in repo | How to reproduce locally |
+|-----------|-----------------|--------------------------|
+| Wildfire data pipeline | `scripts/` with documented steps | Run the 3 scripts above in order |
+| CS2-RQ2 models (OLS/NN/LSTM) | Trained weights committed in `model/CS2RQ2_models/` | Run `analysis/CS2Q2.ipynb` end-to-end |
+| CS2-RQ2 results | Cell outputs committed in `analysis/CS2Q2.ipynb` | Viewable directly on GitHub |
+| CS2-RQ1 & RQ3 (Bayesian) | Analysis in `model/CS2Q1&3 Analysis.qmd`; rendered PDF in `model/` | Run QMD locally with R + brms (seed = 946) |
+
+**To reproduce CS2-RQ2 locally:**
+```bash
+# 1. Build the wildfire dataset (see above)
+# 2. Open and run the notebook
+jupyter notebook analysis/CS2Q2.ipynb
+```
+
+**To reproduce CS2-RQ1 and CS2-RQ3 locally (requires R):**
+```r
+# Install required packages
+install.packages(c("tidyverse", "brms", "bayesplot", "posterior", "tidybayes", "mgcv", "janitor"))
+
+# Update the data_path on line 21 of the QMD, then render:
+quarto render "model/CS2Q1&3 Analysis.qmd"
+# MCMC chains: 4 × 2,000 iterations, seed = 946
+# Runtime: ~5–15 minutes
+```
+
+---
+
+## How to Run the CI Pipeline
 
 1. Go to the **Actions** tab at the top of the repository.
-2. In the left-hand sidebar, click **“Analysis Pipeline (uv + Quarto)”**.
-3. Click **“Run workflow”**.
-4. Click the green **“Run workflow”** button again.
-5. The full pipeline will execute (~3 minutes).
+2. In the left-hand sidebar, click **"Analysis Pipeline (uv + Quarto)"**.
+3. Click **"Run workflow"** → **"Run workflow"** (green button).
+4. The full pipeline executes (~3 minutes) and uploads the rendered report as a ZIP artifact.
 
-All reports will be regenerated automatically and downloaded as a.zip file to your local drive.
+---
 
-# Notes on Reproducibility
+## Intended Audience
 
-- Resource-intensive model calibration is not re-executed during CI.
-- Pretrained model artifacts are stored in `model/Q1_models/`.
-- Data processing notebooks are modular and clearly separated.
-- Outputs and figures are stored under `outputs/`.
-
-The repository is structured so that:
-- Data lives in `/data`
-- Processing logic lives in `/analysis`
-- Modelling artifacts live in `/model`
-- Final communication lives in `/report`
-
-This ensures logical grouping of related information and ease of navigation.
-
-
-# Intended Audience
-
-This repository is designed for:
-- Academic evaluation
-- Reproducible analytics demonstration
-- Public-sector analytics stakeholders
-- Environmental policy modelling teams
-
-It supports decision-ready insights for Ontario municipal environmental offices and the Ministry of the Environment.
+This repository is designed for academic evaluation, reproducible analytics demonstration, and public-sector environmental analytics. It supports evidence-based insights for Ontario municipal environmental offices and the Ministry of the Environment.

@@ -2,6 +2,27 @@
   "device_used_for_training": "cuda",
   "baseline_model_file": "lstm_baseline.pt",
   "wildfire_model_file": "lstm_wildfire.pt",
+  "baseline_architecture": {
+    "input_size": 34,
+    "hidden_size": 128,
+    "num_layers": 2,
+    "dropout": 0.2,
+    "seq_len": 7
+  },
+  "wildfire_architecture": {
+    "input_size": 38,
+    "hidden_size": 128,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "seq_len": 7
+  },
+  "training_config": {
+    "lr": 0.0003,
+    "batch_size": 256,
+    "max_epochs": 200,
+    "random_seed": 0,
+    "seed_calls": ["np.random.seed(0)", "torch.manual_seed(0)"]
+  },
   "baseline_feature_cols": [
     "aqi",
     "MeanTemp",
@@ -79,5 +100,5 @@
     "dow_Wed"
   ],
   "target_col": "aqi_next",
-  "notes": "Load the model by recreating LSTMRegressor with the correct input_size and hyperparameters, then call load_state_dict()."
+  "notes": "To load: instantiate LSTMRegressor with the architecture params above, then call load_state_dict(torch.load(model_file)). Features must be standardized using training-set mean/std (computed in CS2Q2.ipynb) before creating sequences of length seq_len."
 }

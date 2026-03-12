@@ -1,15 +1,73 @@
 {
   "ols": {
     "baseline_file": "ols_baseline.pkl",
-    "wildfire_file": "ols_wildfire.pkl"
+    "wildfire_file": "ols_wildfire.pkl",
+    "model_type": "statsmodels OLS (formula-based)",
+    "random_seed": 0,
+    "baseline_metrics": {
+      "train_RMSE": 15.093071,
+      "test_RMSE": 11.726270,
+      "test_MAE": 8.682664,
+      "top_decile_RMSE": 22.470814,
+      "top_decile_MAE": 19.058420
+    },
+    "wildfire_metrics": {
+      "train_RMSE": 15.028890,
+      "test_RMSE": 11.704901,
+      "test_MAE": 8.697979,
+      "top_decile_RMSE": 22.638192,
+      "top_decile_MAE": 19.316394
+    }
   },
   "nn": {
     "baseline_file": "nn_baseline.joblib",
-    "wildfire_file": "nn_wildfire.joblib"
+    "wildfire_file": "nn_wildfire.joblib",
+    "model_type": "sklearn MLPRegressor (Pipeline: StandardScaler + OneHotEncoder + MLP)",
+    "random_seed": 0,
+    "baseline_hyperparams": {
+      "hidden_layer_sizes": [32],
+      "alpha": 0.001,
+      "learning_rate_init": 0.0005
+    },
+    "wildfire_hyperparams": {
+      "hidden_layer_sizes": [64, 32],
+      "alpha": 0.0001,
+      "learning_rate_init": 0.0005
+    },
+    "baseline_metrics": {
+      "train_RMSE": 13.853603,
+      "test_RMSE": 12.300621,
+      "test_MAE": 9.295328,
+      "top_decile_RMSE": 21.523922,
+      "top_decile_MAE": 18.380774
+    },
+    "wildfire_metrics": {
+      "train_RMSE": 12.271920,
+      "test_RMSE": 12.782537,
+      "test_MAE": 9.542219,
+      "top_decile_RMSE": 22.558778,
+      "top_decile_MAE": 19.144850
+    }
   },
   "lstm": {
     "baseline_file": "lstm_baseline.pt",
     "wildfire_file": "lstm_wildfire.pt",
-    "metadata_file": "lstm_metadata.json"
+    "metadata_file": "lstm_metadata.json",
+    "model_type": "PyTorch LSTM (see lstm_metadata.json for architecture and loading instructions)",
+    "random_seed": 0,
+    "baseline_metrics": {
+      "val_RMSE": 10.572323,
+      "test_RMSE": 11.786356,
+      "test_MAE": 8.939309,
+      "top_decile_RMSE": 23.453293,
+      "top_decile_MAE": 20.651726
+    },
+    "wildfire_metrics": {
+      "val_RMSE": 10.502313,
+      "test_RMSE": 11.889401,
+      "test_MAE": 9.020151,
+      "top_decile_RMSE": 23.829374,
+      "top_decile_MAE": 21.044420
+    }
   }
 }
