@@ -224,7 +224,7 @@ The CS2 analyses cannot run in CI due to data size and compute requirements. Rep
 | Wildfire data pipeline | `scripts/` with documented steps | Run the 3 scripts above in order |
 | CS2-RQ2 models (OLS/NN/LSTM) | Trained weights committed in `model/CS2RQ2_models/` | Run `analysis/CS2Q2.ipynb` end-to-end |
 | CS2-RQ2 results | Cell outputs committed in `analysis/CS2Q2.ipynb` | Viewable directly on GitHub |
-| CS2-RQ1 & RQ3 (Bayesian) | Analysis in `model/CS2Q1&3 Analysis.qmd`; rendered PDF in `model/` | Run QMD locally with R + brms (seed = 946) |
+| CS2-RQ1 & RQ3 (Bayesian) | Analysis in `model/CS2Q1&3 Analysis.qmd`; results summarised in `report/FinalSlides.pdf` | Run QMD locally with R + brms (seed = 946) |
 
 **To reproduce CS2-RQ2 locally:**
 ```bash
@@ -238,7 +238,7 @@ jupyter notebook analysis/CS2Q2.ipynb
 # Install required packages
 install.packages(c("tidyverse", "brms", "bayesplot", "posterior", "tidybayes", "mgcv", "janitor"))
 
-# Update the data_path on line 21 of the QMD, then render:
+# Ensure data/wildfire/merged_with_wsei.csv exists (run the 3 data scripts above), then render:
 quarto render "model/CS2Q1&3 Analysis.qmd"
 # MCMC chains: 4 × 2,000 iterations, seed = 946
 # Runtime: ~5–15 minutes
@@ -246,7 +246,7 @@ quarto render "model/CS2Q1&3 Analysis.qmd"
 
 ---
 
-## How to Run the CI Pipeline
+## How to Run the CI Pipeline (Case Study 1)
 
 1. Go to the **Actions** tab at the top of the repository.
 2. In the left-hand sidebar, click **"Analysis Pipeline (uv + Quarto)"**.
