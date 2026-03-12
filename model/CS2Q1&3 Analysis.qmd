@@ -5,6 +5,17 @@ editor: visual
 ---
 
 ```{r}
+#| label: install-packages
+#| eval: false
+# Run this chunk once to install required R packages (if not already installed).
+# Requires R >= 4.2 and a working C++ toolchain for brms/Stan.
+install.packages(c(
+  "tidyverse", "lubridate", "brms", "bayesplot",
+  "posterior", "tidybayes", "mgcv", "janitor"
+))
+```
+
+```{r}
 library(tidyverse)
 library(lubridate)
 library(brms)
@@ -18,7 +29,7 @@ library(janitor)
 ### 1. Data
 
 ```{r}
-data_path <- "/Users/cy027/Desktop/merged_with_wsei.csv"
+data_path <- "../../data/wildfire/merged_with_wsei.csv"
 df_raw <- readr::read_csv(data_path, show_col_types = FALSE)
 
 # Standardize names a bit (avoid spaces in formulas)

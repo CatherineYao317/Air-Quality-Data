@@ -31,12 +31,24 @@ OUT_PATH = REPO_ROOT / "data" / "wildfire" / "hotspots_clean.csv.gz"
 DROP_COLS = ["cbh", "country", "source_year"]
 
 def report(label, df):
+    """Print a short progress banner showing the current row count.
+
+    Args:
+        label (str): Description of the current pipeline stage.
+        df (pd.DataFrame): DataFrame after the most recent cleaning step.
+    """
     print(f"\n{'─'*60}")
     print(f"  {label}")
     print(f"  Rows: {len(df):,}")
 
 
 def main():
+    """Run the full CWFIS hotspot cleaning pipeline and save the result.
+
+    Reads ``hotspots_2022_2024_canada.csv.gz``, applies all cleaning steps
+    documented in the module docstring, and writes the analysis-ready file to
+    ``hotspots_clean.csv.gz``. Prints a data-quality summary on completion.
+    """
     print(f"Reading {IN_PATH} ...")
     df = pd.read_csv(IN_PATH, low_memory=False)
     report("Raw input", df)

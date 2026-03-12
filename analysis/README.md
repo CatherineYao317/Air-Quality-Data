@@ -1,6 +1,6 @@
 # Analysis Folder
 
-This folder contains the core data processing, modelling, and validation workflows supporting the Ontario air quality analysis (Q1 forecasting and Q2 temporal modelling).
+This folder contains the core data processing, modelling, and validation workflows for both Case Studies. Case Study 1 covers traffic-AQI forecasting and temporal pattern analysis; Case Study 2 covers wildfire-aware next-day AQI forecasting.
 
 
 ## File Overview
@@ -10,8 +10,15 @@ Lightweight validation script used for CI.
 Ensures the environment, dependencies, and key pipelines execute successfully.  
 Supports reproducibility via automated checks (uv + Quarto pipeline).
 
-### CS2RQ2.ipynb
-This part includes the analysis for RQ 2 in Case 2， which is the forecasting model with wildfire features. 
+### CS2Q2.ipynb
+Case Study 2 — RQ2 forecasting analysis:
+- Loads `data/wildfire/merged_with_wsei.csv` (produced by `scripts/build_wsei_features.py`)
+- Chronological 80/20 train/test split with IterativeImputer (fitted on train only)
+- Trains and evaluates three model families (OLS, NN, LSTM) in baseline vs. +wildfire configurations
+- Reports overall and top-decile (extreme AQI days) RMSE/MAE
+- Saves trained weights to `model/CS2RQ2_models/`
+
+Cell outputs are committed — viewable directly on GitHub without re-running.
 
 ### AQProcess.ipynb
 Air quality data preprocessing:

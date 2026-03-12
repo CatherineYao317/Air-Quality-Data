@@ -2,7 +2,7 @@
 
 This directory contains all datasets used in the STAT 946 Case Study 1 and 2 analyses.
 
-> **Note on wildfire data:** All files under `data/wildfire/` are **gitignored** (raw/clean hotspot files are 300–400 MB; wsei_features.csv and merged_with_wsei.csv are small and tracked).
+> **Note on wildfire data:** All files under `data/wildfire/` are **gitignored** (the raw/clean hotspot files are 300–400 MB; wsei_features.csv and merged_with_wsei.csv, while smaller, are also gitignored as they are derived outputs).
 > Reproduce them locally by running the pipeline in order:
 > ```bash
 > python scripts/download_cwfis_hotspots.py
