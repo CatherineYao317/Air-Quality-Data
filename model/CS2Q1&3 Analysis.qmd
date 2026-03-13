@@ -29,7 +29,7 @@ library(janitor)
 ### 1. Data
 
 ```{r}
-data_path <- "../../data/wildfire/merged_with_wsei.csv"
+data_path <- "../data/wildfire/merged_with_wsei.csv"
 df_raw <- readr::read_csv(data_path, show_col_types = FALSE)
 
 # Standardize names a bit (avoid spaces in formulas)

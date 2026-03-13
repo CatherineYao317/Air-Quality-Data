@@ -64,7 +64,17 @@ BBOX_LON = (-107.0, -62.0)
 
 def haversine_km(lat1: np.ndarray, lon1: np.ndarray,
                  lat2: float, lon2: float) -> np.ndarray:
-    """Vectorised haversine distance from arrays of (lat1, lon1) to scalar (lat2, lon2)."""
+    """Vectorised haversine distance from arrays of (lat1, lon1) to scalar (lat2, lon2).
+
+    Args:
+        lat1: Array of source latitudes in degrees.
+        lon1: Array of source longitudes in degrees.
+        lat2: Scalar target latitude in degrees.
+        lon2: Scalar target longitude in degrees.
+
+    Returns:
+        Array of great-circle distances in kilometres, same length as lat1/lon1.
+    """
     R = 6371.0
     phi1 = np.radians(lat1)
     phi2 = math.radians(lat2)
@@ -76,9 +86,18 @@ def haversine_km(lat1: np.ndarray, lon1: np.ndarray,
 
 def bearing_from_to(lat1: np.ndarray, lon1: np.ndarray,
                     lat2: float, lon2: float) -> np.ndarray:
-    """
-    Forward bearing (degrees, 0–360) from each (lat1, lon1) point to (lat2, lon2).
+    """Forward bearing (degrees, 0–360) from each (lat1, lon1) point to (lat2, lon2).
+
     This is the direction you would travel FROM the hotspot TO the station.
+
+    Args:
+        lat1: Array of source latitudes in degrees (e.g., hotspot latitudes).
+        lon1: Array of source longitudes in degrees.
+        lat2: Scalar target latitude in degrees (e.g., AQI station latitude).
+        lon2: Scalar target longitude in degrees.
+
+    Returns:
+        Array of forward bearings in degrees [0, 360), same length as lat1/lon1.
     """
     phi1 = np.radians(lat1)
     phi2 = math.radians(lat2)
@@ -92,10 +111,18 @@ def bearing_from_to(lat1: np.ndarray, lon1: np.ndarray,
 
 
 def distance_kernel(d_km: np.ndarray) -> np.ndarray:
-    """
-    Cauchy/inverse-square distance decay kernel.
+    """Cauchy/inverse-square distance decay kernel.
+
     K(d) = 1 / (1 + (d / D0_KM)^2)
-    Half-weight at d = D0_KM (500 km by default).
+
+    Gives weight 1.0 at d=0, 0.5 at d=D0_KM (500 km), and approaches 0
+    beyond MAX_DIST_KM.
+
+    Args:
+        d_km: Array of distances in kilometres.
+
+    Returns:
+        Array of kernel weights in (0, 1], same shape as d_km.
     """
     return 1.0 / (1.0 + (d_km / D0_KM) ** 2)
 
@@ -103,25 +130,28 @@ def distance_kernel(d_km: np.ndarray) -> np.ndarray:
 def wind_alignment_weight(bearing_hotspot_to_station: np.ndarray,
                           wind_dir_deg: float,
                           wind_spd_kmh: float) -> np.ndarray:
-    """
-    Wind alignment weight W(Δθ, v) = v × max(0, −cos(Δθ)).
+    """Wind alignment weight W(Δθ, v) = v × max(0, −cos(Δθ)).
 
-    Δθ = bearing_hotspot_to_station − wind_dir_deg
+    Upwind hotspots receive full weight; crosswind/downwind hotspots receive zero.
+    Δθ = bearing_hotspot_to_station − wind_dir_deg.
 
     Rationale:
-      - wind_dir_deg is the meteorological direction the wind blows FROM.
-      - bearing_hotspot_to_station is the direction FROM hotspot → TO station.
-      - The bearing FROM station → TO hotspot = bearing_hotspot_to_station + 180°.
-      - For a hotspot to be upwind, (bearing_hotspot_to_station + 180°) ≈ wind_dir_deg,
-        i.e., Δθ ≈ −180°, so cos(Δθ) ≈ −1 → we negate to get +1 (full weight).
-      - −cos(Δθ) is 1 when perfectly aligned (upwind), 0 at ±90°, negative beyond
-        (clamped to 0 so downwind/crosswind hotspots contribute zero).
-      - Scales linearly with wind speed: stronger wind → more transport potential.
+        wind_dir_deg is the meteorological direction the wind blows FROM.
+        bearing_hotspot_to_station is the direction FROM hotspot → TO station.
+        For a hotspot to be upwind, Δθ ≈ −180°, so cos(Δθ) ≈ −1; negating gives
+        full weight (+1). Weight is clamped to zero for downwind/crosswind hotspots.
+        Weight scales linearly with wind speed (stronger wind → more transport).
 
-    Special cases:
-      - wind_dir_deg is NaN or 0 (calm): directional correction is neutralised;
-        alignment is set to 0.5 (half-weight, representing alignment uncertainty).
-      - wind_spd_kmh is NaN: use 1.0 as a neutral speed weight.
+    Args:
+        bearing_hotspot_to_station: Array of bearings (degrees) from each hotspot
+            to the target AQI station.
+        wind_dir_deg: Meteorological wind direction at the station (degrees FROM
+            which wind blows). NaN or 0 (calm) is treated as direction-unknown.
+        wind_spd_kmh: Wind speed in km/h. NaN is replaced with 1.0 (neutral).
+
+    Returns:
+        Array of non-negative alignment weights, same length as
+        bearing_hotspot_to_station.
     """
     if np.isnan(wind_dir_deg) or wind_dir_deg == 0.0:
         cos_align = np.full(len(bearing_hotspot_to_station), 0.5)
@@ -136,14 +166,33 @@ def wind_alignment_weight(bearing_hotspot_to_station: np.ndarray,
 # ── Step 1: Wind direction join ────────────────────────────────────────────────
 
 def load_station_locations(merged: pd.DataFrame) -> pd.DataFrame:
-    """Return unique (Station ID, Latitude, Longitude) from merged dataset."""
+    """Return unique (Station ID, Latitude, Longitude) rows from the merged dataset.
+
+    Args:
+        merged: The merged AQI+weather+traffic DataFrame containing at minimum
+            columns ``Station ID``, ``Latitude``, and ``Longitude``.
+
+    Returns:
+        DataFrame with one row per unique station and columns
+        ``Station ID``, ``Latitude``, ``Longitude``.
+    """
     return (merged[["Station ID", "Latitude", "Longitude"]]
             .drop_duplicates("Station ID")
             .reset_index(drop=True))
 
 
 def circular_mean_deg(angles_deg: pd.Series) -> float:
-    """Circular mean of angles in degrees (handles 350°+10° = 0° correctly)."""
+    """Circular mean of angles in degrees, handling wrap-around correctly.
+
+    Uses sin/cos averaging so that, e.g., mean(350°, 10°) = 0° rather than 180°.
+    NaN values are silently dropped before averaging.
+
+    Args:
+        angles_deg: Series of angles in degrees. May contain NaNs.
+
+    Returns:
+        Circular mean in degrees [0, 360), or ``np.nan`` if all values are NaN.
+    """
     rad = np.radians(angles_deg.dropna())
     if len(rad) == 0:
         return np.nan
@@ -151,13 +200,22 @@ def circular_mean_deg(angles_deg: pd.Series) -> float:
 
 
 def build_wind_features(merged: pd.DataFrame) -> pd.DataFrame:
-    """
-    For each (AQI station, date) pair, find matching ECCC weather stations
-    within MATCH_RADIUS_KM and compute:
-        wind_dir_deg  — circular mean of Dir of Max Gust (converted from 10s-deg)
-        wind_spd_kmh  — mean Spd of Max Gust (km/h)
+    """Build daily wind direction and speed features for each AQI station.
 
-    Returns a DataFrame indexed by (Station ID, Date) with those two columns.
+    For each (AQI station, date) pair, finds all ECCC weather stations within
+    MATCH_RADIUS_KM and computes:
+        - ``wind_dir_deg``: circular mean of Dir of Max Gust (converted from
+          ECCC 10s-degree encoding; 0 → NaN as it indicates calm/missing).
+        - ``wind_spd_kmh``: mean Spd of Max Gust across matched stations.
+
+    Args:
+        merged: The merged AQI+weather+traffic DataFrame. Must contain columns
+            ``Station ID``, ``Latitude``, and ``Longitude``.
+
+    Returns:
+        DataFrame with columns ``Station ID``, ``Date``, ``wind_dir_deg``,
+        and ``wind_spd_kmh``, one row per (station, date) pair that has at
+        least one nearby ECCC weather station.
     """
     print("\n── Step 1: Wind direction join ──────────────────────────────────────")
     print(f"  Loading {WEATHER_PATH} ...")
@@ -237,9 +295,15 @@ def build_wind_features(merged: pd.DataFrame) -> pd.DataFrame:
 # ── Step 2: Hotspot pre-filtering ─────────────────────────────────────────────
 
 def load_hotspots() -> dict[pd.Timestamp, pd.DataFrame]:
-    """
-    Load clean hotspots, apply bounding-box pre-filter, and group by date.
-    Returns a dict mapping date → DataFrame (with lat, lon, hfi, frp, tfc).
+    """Load clean hotspots, apply bounding-box pre-filter, and group by date.
+
+    Reads ``HOTSPOT_PATH`` (hotspots_clean.csv.gz), retains only rows within
+    ``BBOX_LAT`` / ``BBOX_LON``, fills per-proxy NaNs with 0, and indexes
+    the result by date for O(1) lookup during WSEI computation.
+
+    Returns:
+        Dict mapping each unique hotspot date (``pd.Timestamp``) to a DataFrame
+        with columns ``lat``, ``lon``, ``hfi``, ``frp``, ``tfc``.
     """
     print("\n── Step 2: Loading and filtering hotspots ───────────────────────────")
     print(f"  Loading {HOTSPOT_PATH} ...")
@@ -288,9 +352,26 @@ def compute_wsei_for_station_date(
     hotspot_groups: dict[pd.Timestamp, pd.DataFrame],
     target_date: pd.Timestamp,
 ) -> dict[str, float]:
-    """
-    Compute all WSEI variants for one (station, target_date) pair.
-    Returns a dict of column_name → value.
+    """Compute all WSEI variants for one (station, target_date) pair.
+
+    Evaluates WSEI(s, t, k) = Σ_f log(1+I_f) × K(d(s,f)) × W(Δθ_{s,f}, v_{s,t-k})
+    for lags k ∈ LAGS and intensity proxies hfi, frp, tfc.  Also computes
+    derived aggregates ``wsei_hfi_max3d`` and ``wsei_hfi_sum3d``.
+
+    Args:
+        s_lat: AQI station latitude in degrees.
+        s_lon: AQI station longitude in degrees.
+        wind_dir: Wind direction at the station on target_date (degrees FROM).
+            NaN if unavailable.
+        wind_spd: Wind speed at the station on target_date (km/h). NaN if
+            unavailable.
+        hotspot_groups: Dict mapping date → hotspot DataFrame as returned by
+            :func:`load_hotspots`.
+        target_date: The forecast target date (next-day AQI date).
+
+    Returns:
+        Dict mapping feature column names (e.g. ``"wsei_hfi_k0"``) to their
+        scalar float values for this (station, date) pair.
     """
     result: dict[str, float] = {}
 
@@ -340,9 +421,25 @@ def compute_all_wsei(
     wind_df: pd.DataFrame,
     hotspot_groups: dict[pd.Timestamp, pd.DataFrame],
 ) -> pd.DataFrame:
-    """
-    Iterate over all (station, date) pairs and compute WSEI features.
-    Returns a DataFrame with Station ID, Date, wind cols, and all WSEI cols.
+    """Iterate over all (station, date) pairs and compute WSEI features.
+
+    Joins wind features onto the merged dataset, then calls
+    :func:`compute_wsei_for_station_date` for every row.  Prints progress
+    every 5,000 rows.
+
+    Args:
+        merged: The merged AQI+weather+traffic DataFrame with columns
+            ``Station ID``, ``Date``, ``Latitude``, and ``Longitude``.
+        wind_df: Wind features DataFrame as returned by
+            :func:`build_wind_features`, with columns ``Station ID``,
+            ``Date``, ``wind_dir_deg``, ``wind_spd_kmh``.
+        hotspot_groups: Dict mapping date → hotspot DataFrame as returned by
+            :func:`load_hotspots`.
+
+    Returns:
+        DataFrame with columns ``Station ID``, ``Date``, ``wind_dir_deg``,
+        ``wind_spd_kmh``, and all WSEI feature columns, one row per
+        (station, date) pair in merged.
     """
     print("\n── Step 3: Computing WSEI features ──────────────────────────────────")
 
@@ -400,7 +497,14 @@ def compute_all_wsei(
 
 
 def _isnan(x) -> bool:
-    """Safe NaN check for values that could be float or numpy scalar."""
+    """Safe NaN check for values that may be float, numpy scalar, or None.
+
+    Args:
+        x: Value to test.
+
+    Returns:
+        True if x is NaN or None, False otherwise.
+    """
     try:
         return math.isnan(x)
     except (TypeError, ValueError):
@@ -410,6 +514,17 @@ def _isnan(x) -> bool:
 # ── Step 4: Sanity checks ─────────────────────────────────────────────────────
 
 def sanity_checks(wsei_df: pd.DataFrame, merged_df: pd.DataFrame) -> None:
+    """Print sanity-check diagnostics for the computed WSEI features.
+
+    Reports output shape, fraction of non-zero ``wsei_hfi_k0`` values, the
+    top-10 dates by mean ``wsei_hfi_k0`` (expected to be summer 2023), and
+    the Pearson correlation between ``wsei_hfi_k0`` and AQI.
+
+    Args:
+        wsei_df: WSEI features DataFrame as returned by :func:`compute_all_wsei`.
+        merged_df: The original merged AQI+weather+traffic DataFrame (used to
+            join AQI values for the correlation check).
+    """
     print("\n── Sanity checks ────────────────────────────────────────────────────")
     print(f"  Output shape: {wsei_df.shape}")
     pct_nonzero = (wsei_df["wsei_hfi_k0"] > 0).mean()
@@ -438,6 +553,15 @@ def sanity_checks(wsei_df: pd.DataFrame, merged_df: pd.DataFrame) -> None:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    """Run the full WSEI feature-engineering pipeline end-to-end.
+
+    Executes four steps in sequence:
+        1. Load merged dataset and extract wind features from ECCC weather data.
+        2. Load and bounding-box-filter CWFIS hotspot data.
+        3. Compute WSEI features for every (station, date) pair.
+        4. Run sanity checks, save ``wsei_features.csv`` and
+           ``merged_with_wsei.csv`` to ``data/wildfire/``.
+    """
     print("=" * 65)
     print("  build_wsei_features.py — Case Study 2 Feature Engineering")
     print("=" * 65)
